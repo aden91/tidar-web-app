@@ -1,0 +1,36 @@
+name: Deploy Frontend to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # Jalankan workflow ini setiap kali ada push ke branch 'main'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # Jalankan job ini di runner Ubuntu terbaru
+
+    steps:
+      - name: Checkout repository # Langkah pertama: Ambil kode dari repositori
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js # Siapkan Node.js (jika Anda memiliki langkah build JS di frontend)
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18' # Sesuaikan versi Node.js jika diperlukan
+
+      - name: Install dependencies (if any) # Instal dependensi frontend jika ada (misal: npm install di folder public)
+        # Jika frontend Anda hanya HTML/CSS/JS murni tanpa package.json di public/, Anda bisa mengomentari baris ini
+        # run: npm install # Jika ada package.json di root public/
+        # run: npm install --prefix public # Jika package.json ada di public/
+
+      - name: Build project (if any) # Langkah build frontend jika ada (misal: webpack, vite, dll.)
+        # Jika frontend Anda hanya HTML/CSS/JS murni tanpa proses build, Anda bisa mengomentari baris ini
+        # run: npm run build # Sesuaikan dengan script build Anda
+
+      - name: Deploy to GitHub Pages # Langkah utama: Deploy folder public/ ke GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Token GitHub otomatis
+          publish_dir: ./public # Ini adalah folder yang akan di-deploy!
+          # Jika Anda ingin menghapus file lama di GitHub Pages, tambahkan baris ini:
+          # force_orphan: true
