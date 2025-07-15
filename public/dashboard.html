@@ -190,19 +190,8 @@
         return date.toLocaleDateString('id-ID', options);
     }
 
-    // Pindahkan onAuthStateChanged ke luar DOMContentLoaded
-    // agar selalu mendengarkan dan dapat mengakses 'auth' yang sudah didefinisikan
-    onAuthStateChanged(auth, async (user) => {
-        // Pastikan elemen DOM sudah dimuat sebelum diakses
-        if (document.readyState === 'loading') { // Loading hasn't finished yet
-            document.addEventListener('DOMContentLoaded', () => handleAuthState(user));
-        } else {
-            // `DOMContentLoaded` has already fired
-            handleAuthState(user);
-        }
-    });
-
-    async function handleAuthState(user) {
+    // --- MAIN SCRIPT LOGIC ---
+    document.addEventListener('DOMContentLoaded', function() {
         const logoutBtn = document.getElementById('logout-btn');
         const userPhotoProfileEl = document.getElementById('user-photo-profile');
         const userNameProfileEl = document.getElementById('user-name-profile');
@@ -212,179 +201,186 @@
         const uploadProgressContainer = document.getElementById('upload-progress-container');
         const uploadProgressBar = document.getElementById('upload-progress-bar');
 
-        if (user) {
-            const displayName = user.displayName || 'Nama Belum Diatur';
-            const email = user.email || 'Email tidak tersedia';
-            const uid = user.uid;
-            const photoURL = user.photoURL || 'https://placehold.co/150x150/e0e0e0/333?text=Foto';
+        // onAuthStateChanged harus berada di dalam DOMContentLoaded untuk memastikan elemen DOM sudah ada
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const displayName = user.displayName || 'Nama Belum Diatur';
+                const email = user.email || 'Email tidak tersedia';
+                const uid = user.uid;
+                const photoURL = user.photoURL || 'https://placehold.co/150x150/e0e0e0/333?text=Foto';
 
-            userNameProfileEl.textContent = displayName;
-            userEmailProfileEl.textContent = email;
-            userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`;
+                userNameProfileEl.textContent = displayName;
+                userEmailProfileEl.textContent = email;
+                userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`;
 
-            let userData = null;
+                let userData = null;
 
-            try {
-                const token = await user.getIdToken();
-                const response = await fetch(`${backendUrl}/api/users/${uid}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                try {
+                    const token = await user.getIdToken();
+                    const response = await fetch(`${backendUrl}/api/users/${uid}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
 
-                if (response.status === 403 || response.status === 401) {
-                    alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-                    await signOut(auth); // Pastikan signOut selesai sebelum redirect
-                    window.location.href = './index.html';
-                    return;
-                }
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(`Server merespons dengan status ${response.status}: ${errorData.message || 'Unknown error'}`);
-                }
-
-                const result = await response.json();
-                if (!result.success) throw new Error(result.message);
-
-                userData = result.data;
-
-                if (userData.isVerified && user.photoURL) {
-                    const contentContainer = document.getElementById('content-container');
-                    const qrCodeData = `${window.location.origin}/dashboard.html?uid=${uid}`;
-                    const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(qrCodeData)}&qzone=1&margin=0`;
-                    
-                    const ttlParts = [];
-                    if (userData.tempatLahir) ttlParts.push(userData.tempatLahir);
-                    if (userData.tanggalLahir) ttlParts.push(formatIndonesianDate(userData.tanggalLahir));
-                    const ttl = ttlParts.join(', ');
-
-                    const addressParts = [];
-                    if (userData.alamat?.detail) addressParts.push(userData.alamat.detail);
-                    if (userData.alamat?.kelurahan) addressParts.push(userData.alamat.kelurahan);
-                    if (userData.alamat?.kecamatan) addressParts.push(userData.alamat.kecamatan);
-                    const fullAddress = addressParts.join(', ');
-
-                    contentContainer.innerHTML = `
-                    <div class="aspect-[88/55] w-full max-w-xl mx-auto flex flex-col font-sans shadow-lg rounded-xl overflow-hidden border border-gray-300">
-                        <div class="header-red-new relative flex items-center justify-between p-2 text-white">
-                            <img src="logo-tidar.png" alt="Logo TIDAR" class="h-14 w-14 z-10">
-                            <div class="text-center z-10">
-                                <p class="font-bold text-xl tracking-wider">KARTU TANDA ANGGOTA</p>
-                                <p class="text-sm font-semibold -mt-1 tracking-wide">TUNAS INDONESIA RAYA</p>
-                            </div>
-                            <div class="h-14 w-14 flex items-center justify-center">
-                                <img src="${qrCodeUrl}" alt="QR Code" class="h-14 w-14 rounded-md bg-white p-0.5 z-10">
-                            </div>
-                        </div>
-
-                        <div class="body-yellow-new flex-grow p-3 flex flex-col">
-                            <div class="flex-grow flex gap-3">
-                                <div class="w-1/3 flex-shrink-0 pt-1">
-                                    <img src="${user.photoURL}?t=${new Date().getTime()}" alt="Foto Profil" class="w-full object-cover border-2 border-white rounded-lg shadow-md aspect-square">
-                                </div>
-
-                                <div class="w-2/3 flex flex-col justify-center space-y-1.5 text-gray-800">
-                                    <div>
-                                        <p class="data-label-new">NAMA</p>
-                                        <p class="data-value-new text-sm font-bold">${(userData.name || displayName).toUpperCase()}</p>
-                                    </div>
-                                    <div>
-                                        <p class="data-label-new">ID ANGGOTA</p>
-                                        <p class="data-value-new text-xs font-mono">${uid}</p>
-                                    </div>
-                                    <div>
-                                        <p class="data-label-new">TEMPAT, TANGGAL LAHIR</p>
-                                        <p class="data-value-new text-xs">${ttl.toUpperCase()}</p>
-                                    </div>
-                                    <div>
-                                        <p class="data-label-new">ALAMAT</p>
-                                        <p class="data-value-new text-xs leading-snug">${fullAddress.toUpperCase()}</p>
-                                    </div>
-                                    <div>
-                                        <p class="data-label-new">KOTA/KABUPATEN</p>
-                                        <p class="data-value-new text-xs">${(userData.alamat?.kota || '').toUpperCase()}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="mt-auto flex justify-end -mb-1">
-                                <div class="w-2/5 text-center">
-                                    <p class="text-xs font-bold text-gray-800" style="font-size: 0.6rem;">KETUA UMUM</p>
-                                    <div class="relative h-10 my-0.5">
-                                        <img src="Tanda_Tangan_Prabowo_Subianto.png" alt="Tanda Tangan" class="h-full absolute left-1/2 -translate-x-1/2 z-10">
-                                        <img src="logo-tidar.png" alt="Stempel" class="h-12 absolute right-5 top-1/2 -translate-y-1/2 opacity-40 z-20">
-                                    </div>
-                                    <p class="font-bold text-xs border-t-2 border-gray-500 pt-0.5 text-gray-800">PRABOWO SUBIANTO</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    `;
-                } else {
-                    const title = userData?.isVerified ? "Langkah Terakhir: Unggah Foto Profil" : "Akun Menunggu Verifikasi";
-                    const body = userData?.isVerified ? "Akun Anda sudah diverifikasi. Silakan unggah foto profil Anda pada lingkaran di sebelah kiri untuk mencetak KTA Digital." : "Akun Anda sedang dalam proses peninjauan oleh Admin. Mohon ditunggu.";
-                    showContentMessage({ title, body }, 'warning');
-                }
-
-                const statusText = userData?.isVerified ? 'Terverifikasi' : 'Menunggu Verifikasi';
-                const statusIcon = userData?.isVerified ? 'fa-check-circle text-green-500' : 'fa-clock text-yellow-500';
-                statusContainer.innerHTML = `<p><strong><i class="fas fa-id-card mr-2 text-red-600"></i>UID:</strong> <span class="font-mono text-sm">${uid}</span></p><p><strong><i class="fas ${statusIcon} mr-2"></i>Status:</strong> <span class="font-semibold">${statusText}</span></p>`;
-
-                // Inisialisasi event listener setelah elemen DOM dipastikan ada
-                logoutBtn.addEventListener('click', () => {
-                    signOut(auth).then(() => { window.location.href = './index.html'; });
-                });
-
-                photoUploadInput.addEventListener('change', function(e) {
-                    const file = e.target.files[0];
-                    if (!file) return;
-                    const currentUser = auth.currentUser; // Gunakan currentUser yang aktif
-                    if (!currentUser) {
-                        alert("Error: User tidak valid.");
-                        return;
+                    if (response.status === 403 || response.status === 401) {
+                         alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
+                         await signOut(auth); // Pastikan signOut selesai sebelum redirect
+                         window.location.href = './index.html';
+                         return;
                     }
 
-                    console.log("UID Pengguna:", currentUser.uid);
-                    console.log("Nama File yang Diunggah:", file.name);
-                    console.log("Path Storage yang Dibuat:", `profile_pictures/${currentUser.uid}/${file.name}`);
+                    if (!response.ok) {
+                         const errorData = await response.json();
+                         throw new Error(`Server merespons dengan status ${response.status}: ${errorData.message || 'Unknown error'}`);
+                    }
 
-                    const fileRef = ref(storage, `profile_pictures/${currentUser.uid}/${file.name}`);
-                    const uploadTask = uploadBytesResumable(fileRef, file);
-                    uploadProgressContainer.classList.remove('hidden');
-                    uploadTask.on('state_changed',
-                        (snapshot) => {
-                            uploadProgressBar.style.width = ((snapshot.bytesTransferred / snapshot.totalBytes) * 100) + '%';
-                        },
-                        (error) => {
-                            console.error("UPLOAD GAGAL:", error);
-                            alert(`Gagal mengunggah foto. Kode Error: ${error.code}. Pesan: ${error.message}`);
-                            uploadProgressContainer.classList.add('hidden');
-                        },
-                        () => {
-                            getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-                                console.log("Download URL:", downloadURL);
-                                try {
-                                    await currentUser.updateProfile({ photoURL: downloadURL });
-                                    console.log("Profil pengguna berhasil diperbarui!");
-                                    alert("Foto profil berhasil diperbarui! Halaman akan dimuat ulang.");
-                                    window.location.reload();
-                                } catch (updateError) {
-                                    console.error("Gagal memperbarui profil pengguna:", updateError);
-                                    alert(`Gagal memperbarui profil. Pesan: ${updateError.message}`);
-                                }
-                            }).catch(err => {
-                                console.error("Gagal mendapatkan URL download:", err);
-                                alert("Gagal mendapatkan URL download setelah unggah.");
-                            });
+                    const result = await response.json();
+                    if (!result.success) throw new Error(result.message);
+
+                    userData = result.data;
+
+                    if (userData.isVerified && user.photoURL) {
+                        const contentContainer = document.getElementById('content-container');
+                        const qrCodeData = `${window.location.origin}/dashboard.html?uid=${uid}`;
+                        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(qrCodeData)}&qzone=1&margin=0`;
+                        
+                        const ttlParts = [];
+                        if (userData.tempatLahir) ttlParts.push(userData.tempatLahir);
+                        if (userData.tanggalLahir) ttlParts.push(formatIndonesianDate(userData.tanggalLahir));
+                        const ttl = ttlParts.join(', ');
+
+                        const addressParts = [];
+                        if (userData.alamat?.detail) addressParts.push(userData.alamat.detail);
+                        if (userData.alamat?.kelurahan) addressParts.push(userData.alamat.kelurahan);
+                        if (userData.alamat?.kecamatan) addressParts.push(userData.alamat.kecamatan);
+                        const fullAddress = addressParts.join(', ');
+
+                        contentContainer.innerHTML = `
+                        <div class="aspect-[88/55] w-full max-w-xl mx-auto flex flex-col font-sans shadow-lg rounded-xl overflow-hidden border border-gray-300">
+                            <div class="header-red-new relative flex items-center justify-between p-2 text-white">
+                                <img src="logo-tidar.png" alt="Logo TIDAR" class="h-14 w-14 z-10">
+                                <div class="text-center z-10">
+                                    <p class="font-bold text-xl tracking-wider">KARTU TANDA ANGGOTA</p>
+                                    <p class="text-sm font-semibold -mt-1 tracking-wide">TUNAS INDONESIA RAYA</p>
+                                </div>
+                                <div class="h-14 w-14 flex items-center justify-center">
+                                    <img src="${qrCodeUrl}" alt="QR Code" class="h-14 w-14 rounded-md bg-white p-0.5 z-10">
+                                </div>
+                            </div>
+
+                            <div class="body-yellow-new flex-grow p-3 flex flex-col">
+                                <div class="flex-grow flex gap-3">
+                                    <div class="w-1/3 flex-shrink-0 pt-1">
+                                        <img src="${user.photoURL}?t=${new Date().getTime()}" alt="Foto Profil" class="w-full object-cover border-2 border-white rounded-lg shadow-md aspect-square">
+                                    </div>
+
+                                    <div class="w-2/3 flex flex-col justify-center space-y-1.5 text-gray-800">
+                                        <div>
+                                            <p class="data-label-new">NAMA</p>
+                                            <p class="data-value-new text-sm font-bold">${(userData.name || displayName).toUpperCase()}</p>
+                                        </div>
+                                        <div>
+                                            <p class="data-label-new">ID ANGGOTA</p>
+                                            <p class="data-value-new text-xs font-mono">${uid}</p>
+                                        </div>
+                                        <div>
+                                            <p class="data-label-new">TEMPAT, TANGGAL LAHIR</p>
+                                            <p class="data-value-new text-xs">${ttl.toUpperCase()}</p>
+                                        </div>
+                                        <div>
+                                            <p class="data-label-new">ALAMAT</p>
+                                            <p class="data-value-new text-xs leading-snug">${fullAddress.toUpperCase()}</p>
+                                        </div>
+                                        <div>
+                                            <p class="data-label-new">KOTA/KABUPATEN</p>
+                                            <p class="data-value-new text-xs">${(userData.alamat?.kota || '').toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-auto flex justify-end -mb-1">
+                                    <div class="w-2/5 text-center">
+                                        <p class="text-xs font-bold text-gray-800" style="font-size: 0.6rem;">KETUA UMUM</p>
+                                        <div class="relative h-10 my-0.5">
+                                            <img src="Tanda_Tangan_Prabowo_Subianto.png" alt="Tanda Tangan" class="h-full absolute left-1/2 -translate-x-1/2 z-10">
+                                            <img src="logo-tidar.png" alt="Stempel" class="h-12 absolute right-5 top-1/2 -translate-y-1/2 opacity-40 z-20">
+                                        </div>
+                                        <p class="font-bold text-xs border-t-2 border-gray-500 pt-0.5 text-gray-800">PRABOWO SUBIANTO</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                    } else {
+                        const title = userData?.isVerified ? "Langkah Terakhir: Unggah Foto Profil" : "Akun Menunggu Verifikasi";
+                        const body = userData?.isVerified ? "Akun Anda sudah diverifikasi. Silakan unggah foto profil Anda pada lingkaran di sebelah kiri untuk mencetak KTA Digital." : "Akun Anda sedang dalam proses peninjauan oleh Admin. Mohon ditunggu.";
+                        showContentMessage({ title, body }, 'warning');
+                    }
+
+                    const statusText = userData?.isVerified ? 'Terverifikasi' : 'Menunggu Verifikasi';
+                    const statusIcon = userData?.isVerified ? 'fa-check-circle text-green-500' : 'fa-clock text-yellow-500';
+                    statusContainer.innerHTML = `<p><strong><i class="fas fa-id-card mr-2 text-red-600"></i>UID:</strong> <span class="font-mono text-sm">${uid}</span></p><p><strong><i class="fas ${statusIcon} mr-2"></i>Status:</strong> <span class="font-semibold">${statusText}</span></p>`;
+
+                    // Event listener diinisialisasi setelah elemen DOM dipastikan ada dan user ada
+                    logoutBtn.addEventListener('click', () => {
+                        signOut(auth).then(() => { window.location.href = './index.html'; });
+                    });
+
+                    photoUploadInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (!file) return;
+                        const currentUser = auth.currentUser;
+                        if (!currentUser) {
+                            alert("Error: User tidak valid.");
+                            return;
                         }
-                    );
-                });
 
+                        console.log("UID Pengguna:", currentUser.uid);
+                        console.log("Nama File yang Diunggah:", file.name);
+                        console.log("Path Storage yang Dibuat:", `profile_pictures/${currentUser.uid}/${file.name}`);
+
+                        const fileRef = ref(storage, `profile_pictures/${currentUser.uid}/${file.name}`);
+                        const uploadTask = uploadBytesResumable(fileRef, file);
+                        uploadProgressContainer.classList.remove('hidden');
+                        uploadTask.on('state_changed',
+                            (snapshot) => {
+                                uploadProgressBar.style.width = ((snapshot.bytesTransferred / snapshot.totalBytes) * 100) + '%';
+                            },
+                            (error) => {
+                                console.error("UPLOAD GAGAL:", error);
+                                alert(`Gagal mengunggah foto. Kode Error: ${error.code}. Pesan: ${error.message}`);
+                                uploadProgressContainer.classList.add('hidden');
+                            },
+                            () => {
+                                getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                                    console.log("Download URL:", downloadURL);
+                                    try {
+                                        await currentUser.updateProfile({ photoURL: downloadURL });
+                                        console.log("Profil pengguna berhasil diperbarui!");
+                                        alert("Foto profil berhasil diperbarui! Halaman akan dimuat ulang.");
+                                        window.location.reload();
+                                    } catch (updateError) {
+                                        console.error("Gagal memperbarui profil pengguna:", updateError);
+                                        alert(`Gagal memperbarui profil. Pesan: ${updateError.message}`);
+                                    }
+                                }).catch(err => {
+                                    console.error("Gagal mendapatkan URL download:", err);
+                                    alert("Gagal mendapatkan URL download setelah unggah.");
+                                });
+                            }
+                        );
+                    });
+
+                } catch (error) {
+                    console.error("GAGAL MENGAMBIL DATA DARI BACKEND:", error);
+                    let errorMessage = `Tidak dapat memuat data keanggotaan Anda. Error: ${error.message}`;
+                    if (error.message.includes('404')) {
+                        errorMessage = "Data keanggotaan Anda belum lengkap di database kami. Mohon lengkapi pendaftaran Anda atau tunggu verifikasi admin.";
+                    }
+                    showContentMessage({ title: 'Gagal Terhubung', body: errorMessage }, 'error');
+                }
             } else {
-                // Pengguna tidak login, arahkan ke halaman login
                 window.location.href = './index.html';
             }
-        }
-    );
+        });
+    }); // Penutup DOMContentLoaded
 </script>
-</body>
-</html>

@@ -35,7 +35,7 @@
     <div class="min-h-screen flex flex-col md:flex-row">
 
         <div class="w-full md:w-1/2 text-gray-800 flex flex-col justify-center items-center p-8 md:p-12 text-center"
-             style="background-image: linear-gradient(rgba(229, 231, 235, 0.9), rgba(229, 231, 235, 0.9)), url('tidarhome.png'); background-size: cover; background-position: center;">
+             style="background-image: linear-gradient(rgba(229, 231, 235, 0.9), rgba(229, 231, 235, 0.9)), url('tidarhome.jpg'); background-size: cover; background-position: center;">
             <div class="max-w-md">
                 <img src="logo-tidar.png" alt="Logo TIDAR" class="h-24 w-24 mx-auto mb-6">
                 <h1 class="text-3xl md:text-4xl font-extrabold mb-3">Tunas Indonesia Raya</h1>
@@ -193,8 +193,7 @@
         const backendUrl = 'https://tidar-web.onrender.com'; // Ganti dengan URL backend Render Anda yang sebenarnya
 
         const translations = {
-            id: { register_tab: "Daftar", login_tab: "Masuk", register_title: "Buat Akun Baru", personal_data: "Data Diri", full_name: "Nama Lengkap", birth_place: "Tempat Lahir", birth_date: "Tanggal Lahir", address_data: "Alamat Sesuai KTP", province: "Provinsi", city: "Kota/Kabupaten", district: "Kecamatan", village: "Kelurahan/Desa", full_address: "Alamat Lengkap", account_info: "Informasi Akun", email_label: "Alamat Email", phone_number: "Nomor Telepon", password_label: "Kata Sandi", register_button: "Daftar Sekarang", login_title: "Selamat Datang Kembali", login_subtitle: "Masuk ke akun Anda untuk melanjutkan.", login_button: "Masuk", or_login_with: "Atau masuk dengan", google_login: "Masuk dengan Google", phone_login: "Masuk dengan Nomor Telepon" },
-            en: { register_tab: "Register", login_tab: "Login", register_title: "Create New Account", personal_data: "Personal Data", full_name: "Full Name", birth_place: "Place of Birth", birth_date: "Date of Birth", address_data: "Address (as per ID)", province: "Province", city: "City/Regency", district: "District", village: "Village", full_address: "Full Address", account_info: "Account Information", email_label: "Email Address", phone_number: "Phone Number", password_label: "Password", register_button: "Register Now", login_title: "Welcome Back", login_subtitle: "Login to your account to continue.", login_button: "Login", or_login_with: "Or login with", google_login: "Login with Google", phone_login: "Login with Phone Number" }
+            id: { register_tab: "Daftar", login_tab: "Masuk", register_title: "Buat Akun Baru", personal_data: "Data Diri", full_name: "Nama Lengkap", birth_place: "Tempat Lahir", birth_date: "Tanggal Lahir", address_data: "Alamat Sesuai KTP", province: "Provinsi", city: "Kota/Kabupaten", district: "Kecamatan", village: "Kelurahan/Desa", full_address: "Alamat Lengkap", account_info: "Informasi Akun", email_label: "Alamat Email", phone_number: "Nomor Telepon", password_label: "Kata Sandi", register_button: "Daftar Sekarang", login_title: "Selamat Datang Kembali", login_subtitle: "Masuk ke akun Anda untuk melanjutkan.", login_button: "Masuk", or_login_with: "Atau masuk dengan", google_login: "Masuk dengan Google", phone_login: "Masuk dengan Nomor Telepon" }
         };
         let currentLang = 'id';
         function setLanguage(lang) {
@@ -217,6 +216,16 @@
             const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
             document.getElementById('datetime-container').textContent = now.toLocaleDateString(currentLang === 'id' ? 'id-ID' : 'en-US', options);
         }
+
+        // Pindahkan onAuthStateChanged ke luar DOMContentLoaded
+        // agar selalu mendengarkan dan dapat mengakses 'auth' yang sudah didefinisikan
+        onAuthStateChanged(auth, user => {
+            // Jika user sudah login, langsung arahkan ke dashboard
+            // Tambahkan pengecekan jika user sudah di dashboard, jangan redirect lagi
+            if (user && !window.location.href.includes('dashboard.html')) {
+                redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
+            }
+        });
 
         document.addEventListener('DOMContentLoaded', function() {
             const registerTabBtn = document.getElementById('register-tab-btn');
@@ -466,18 +475,6 @@
             loadProvinces(); // Panggil ini setelah semua elemen dan fungsi terkait dimuat
             showRegisterForm(); // Panggil ini untuk menampilkan form register default
 
-            // Cek status autentikasi saat pertama kali load halaman
-            // Pindahkan onAuthStateChanged ini ke luar DOMContentLoaded untuk memastikan selalu listening
-            // atau pastikan ini dipanggil setelah auth didefinisikan.
-            // Untuk saat ini, biarkan di sini karena auth sudah didefinisikan di atas.
-            onAuthStateChanged(auth, user => {
-                if (user) {
-                    // Jika user sudah login, langsung arahkan ke dashboard
-                    // Tambahkan pengecekan jika user sudah di dashboard, jangan redirect lagi
-                    if (!window.location.href.includes('dashboard.html')) {
-                        redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
-                    }
-                }
-            });
+            // onAuthStateChanged sudah dipindahkan ke scope terluar di atas
         });
     </script>
