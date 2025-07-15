@@ -203,19 +203,20 @@
         const uploadProgressContainer = document.getElementById('upload-progress-container');
         const uploadProgressBar = document.getElementById('upload-progress-bar');
 
-        onAuthStateChanged(auth, async (user) => { // Menggunakan onAuthStateChanged dari import
+        // onAuthStateChanged harus berada di luar DOMContentLoaded jika Anda ingin ia selalu mendengarkan
+        // atau pastikan semua elemen DOM yang diakses di dalamnya sudah tersedia
+        onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const displayName = user.displayName || 'Nama Belum Diatur';
                 const email = user.email || 'Email tidak tersedia';
                 const uid = user.uid;
-                // Selalu tetapkan default jika photoURL kosong
                 const photoURL = user.photoURL || 'https://placehold.co/150x150/e0e0e0/333?text=Foto';
 
                 userNameProfileEl.textContent = displayName;
                 userEmailProfileEl.textContent = email;
-                userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`; // Tambahkan cache-busting untuk foto
+                userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`;
 
-                let userData = null; // Deklarasikan userData di sini agar bisa diakses di luar try/catch
+                let userData = null;
 
                 try {
                     const token = await user.getIdToken();
@@ -223,15 +224,13 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
-                    // Tangani respons 403 atau 401 secara eksplisit untuk logout
                     if (response.status === 403 || response.status === 401) {
                          alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-                         signOut(auth).then(() => { window.location.href = './index.html'; }); // Menggunakan signOut dari import
-                         return; // Penting untuk menghentikan eksekusi lebih lanjut
+                         signOut(auth).then(() => { window.location.href = './index.html'; });
+                         return;
                     }
 
                     if (!response.ok) {
-                         // Tangani respons non-OK di sini, termasuk 404
                          const errorData = await response.json();
                          throw new Error(`Server merespons dengan status ${response.status}: ${errorData.message || 'Unknown error'}`);
                     }
@@ -239,25 +238,18 @@
                     const result = await response.json();
                     if (!result.success) throw new Error(result.message);
 
-                    userData = result.data; // Assign userData jika fetch berhasil
+                    userData = result.data;
 
-                    // =================================================================
-                    // === BLOK KODE KTA DESAIN BARU ===
-                    // =================================================================
-                    // Hanya tampilkan KTA jika diverifikasi DAN ada foto profil yang valid
-                    if (userData.isVerified && user.photoURL) { // Gunakan user.photoURL yang asli dari Firebase
+                    if (userData.isVerified && user.photoURL) {
                         const contentContainer = document.getElementById('content-container');
-                        // Gunakan window.location.origin untuk QR Code agar fleksibel di localhost atau live
                         const qrCodeData = `${window.location.origin}/dashboard.html?uid=${uid}`;
                         const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(qrCodeData)}&qzone=1&margin=0`;
                         
-                        // Perbaiki logika TTL: hanya tambahkan koma jika kedua bagian ada
                         const ttlParts = [];
                         if (userData.tempatLahir) ttlParts.push(userData.tempatLahir);
                         if (userData.tanggalLahir) ttlParts.push(formatIndonesianDate(userData.tanggalLahir));
                         const ttl = ttlParts.join(', ');
 
-                        // Perbaiki logika fullAddress: hanya gabungkan bagian yang ada
                         const addressParts = [];
                         if (userData.alamat?.detail) addressParts.push(userData.alamat.detail);
                         if (userData.alamat?.kelurahan) addressParts.push(userData.alamat.kelurahan);
@@ -325,11 +317,7 @@
                         const body = userData.isVerified ? "Akun Anda sudah diverifikasi. Silakan unggah foto profil Anda pada lingkaran di sebelah kiri untuk mencetak KTA Digital." : "Akun Anda sedang dalam proses peninjauan oleh Admin. Mohon ditunggu.";
                         showContentMessage({ title, body }, 'warning');
                     }
-                    // =================================================================
-                    // === AKHIR DARI BLOK KODE BARU ===
-                    // =================================================================
 
-                    // Pindahkan bagian ini ke sini agar userData sudah pasti terdefinisi
                     const statusText = userData.isVerified ? 'Terverifikasi' : 'Menunggu Verifikasi';
                     const statusIcon = userData.isVerified ? 'fa-check-circle text-green-500' : 'fa-clock text-yellow-500';
                     statusContainer.innerHTML = `<p><strong><i class="fas fa-id-card mr-2 text-red-600"></i>UID:</strong> <span class="font-mono text-sm">${uid}</span></p><p><strong><i class="fas ${statusIcon} mr-2"></i>Status:</strong> <span class="font-semibold">${statusText}</span></p>`;
@@ -338,7 +326,6 @@
                 } catch (error) {
                     console.error("GAGAL MENGAMBIL DATA DARI BACKEND:", error);
                     let errorMessage = `Tidak dapat memuat data keanggotaan Anda. Error: ${error.message}`;
-                    // Jika error adalah 404, berikan pesan spesifik
                     if (error.message.includes('404')) {
                         errorMessage = "Data keanggotaan Anda belum lengkap di database kami. Mohon lengkapi pendaftaran Anda atau tunggu verifikasi admin.";
                     }
@@ -348,8 +335,56 @@
                 window.location.href = './index.html';
             }
         });
-        // ... (event listener upload foto dan logout) ...
-    });
+
+        logoutBtn.addEventListener('click', () => {
+            signOut(auth).then(() => { window.location.href = './index.html'; });
+        });
+
+        // Event listener untuk upload foto
+        const photoUploadInputEl = document.getElementById('photo-upload-input');
+        photoUploadInputEl.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const user = auth.currentUser;
+            if (!user) {
+                alert("Error: User tidak valid.");
+                return;
+            }
+
+            console.log("UID Pengguna:", user.uid);
+            console.log("Nama File yang Diunggah:", file.name);
+            console.log("Path Storage yang Dibuat:", `profile_pictures/${user.uid}/${file.name}`);
+
+            const fileRef = ref(storage, `profile_pictures/${user.uid}/${file.name}`);
+            const uploadTask = uploadBytesResumable(fileRef, file);
+            uploadProgressContainer.classList.remove('hidden');
+            uploadTask.on('state_changed',
+                (snapshot) => {
+                    uploadProgressBar.style.width = ((snapshot.bytesTransferred / snapshot.totalBytes) * 100) + '%';
+                },
+                (error) => {
+                    console.error("UPLOAD GAGAL:", error);
+                    alert(`Gagal mengunggah foto. Kode Error: ${error.code}. Pesan: ${error.message}`);
+                    uploadProgressContainer.classList.add('hidden');
+                },
+                () => {
+                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
+                        console.log("Download URL:", downloadURL);
+                        try {
+                            await user.updateProfile({ photoURL: downloadURL });
+                            console.log("Profil pengguna berhasil diperbarui!");
+                            alert("Foto profil berhasil diperbarui! Halaman akan dimuat ulang.");
+                            window.location.reload();
+                        } catch (updateError) {
+                            console.error("Gagal memperbarui profil pengguna:", updateError);
+                            alert(`Gagal memperbarui profil. Pesan: ${updateError.message}`);
+                        }
+                    }).catch(err => {
+                        console.error("Gagal mendapatkan URL download:", err);
+                        alert("Gagal mendapatkan URL download setelah unggah.");
+                    });
+                }
+            );
+        });
+    }); // Penutup DOMContentLoaded
 </script>
-</body>
-</html>

@@ -166,7 +166,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js";
         // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
         // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
@@ -325,7 +325,7 @@
                 } catch (error) {
                     console.error("Login handling error:", error);
                     showMessage(`Terjadi kesalahan saat memproses login: ${error.message}`, false);
-                    auth.signOut(); // Pastikan pengguna logout jika ada masalah dengan backend
+                    signOut(auth); // Pastikan pengguna logout jika ada masalah dengan backend
                 }
             }
 
@@ -400,7 +400,7 @@
                     phone: document.getElementById('register-phone').value,
                 };
                 try {
-                    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, password); // Menggunakan auth dari getAuth(app)
+                    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, password);
                     const user = userCredential.user;
                     await user.updateProfile({ displayName: formData.name });
                     
@@ -415,7 +415,8 @@
 
                     if (!response.ok || !result.success) {
                         // Jika backend gagal menyimpan data, hapus user dari Firebase Auth (opsional tapi disarankan)
-                        await user.delete();
+                        // dan tampilkan error
+                        await signOut(auth); // Sign out user yang baru dibuat
                         throw new Error(result.message || 'Gagal menyimpan data ke backend.');
                     }
 
@@ -438,6 +439,7 @@
                     }
                     console.error("Error pendaftaran:", error);
                     showMessage(errorMessage, false);
+                    // Pastikan tidak ada pengalihan ke dashboard jika pendaftaran gagal di sini
                 }
             });
 
@@ -465,13 +467,17 @@
             showRegisterForm(); // Panggil ini untuk menampilkan form register default
 
             // Cek status autentikasi saat pertama kali load halaman
-            onAuthStateChanged(auth, user => { // Menggunakan auth dari getAuth(app)
+            // Pindahkan onAuthStateChanged ini ke luar DOMContentLoaded untuk memastikan selalu listening
+            // atau pastikan ini dipanggil setelah auth didefinisikan.
+            // Untuk saat ini, biarkan di sini karena auth sudah didefinisikan di atas.
+            onAuthStateChanged(auth, user => {
                 if (user) {
                     // Jika user sudah login, langsung arahkan ke dashboard
-                    redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
+                    // Tambahkan pengecekan jika user sudah di dashboard, jangan redirect lagi
+                    if (!window.location.href.includes('dashboard.html')) {
+                        redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
+                    }
                 }
             });
         });
     </script>
-</body>
-</html>
