@@ -162,7 +162,6 @@
         </div>
     </div>
 
-    <!-- SCRIPT UTAMA APLIKASI -->
     <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
@@ -215,7 +214,7 @@
     }
 
     // --- FUNGSI BANTUAN GLOBAL ---
-     // Pindahkan fungsi ini ke scope global, jika belum (seperti disarankan pada jawaban sebelumnya)
+    // Dipindahkan ke scope global agar dapat diakses dari onAuthStateChanged
     function showMessage(message, isSuccess) {
         const messageBox = document.getElementById('message-box');
         messageBox.textContent = message;
@@ -224,7 +223,7 @@
         messageBox.style.display = 'block';
     }
 
-    // Pindahkan fungsi ini ke scope global, jika belum (seperti disarankan pada jawaban sebelumnya)
+    // Dipindahkan ke scope global agar dapat diakses dari onAuthStateChanged
     function redirectToDashboard(successMessage) {
         showMessage(successMessage, true);
         setTimeout(() => { window.location.href = './dashboard.html'; }, 1500);
@@ -243,15 +242,160 @@
     });
 
     document.addEventListener('DOMContentLoaded', function() {
-        // ... (seleksi elemen DOM lainnya tidak berubah) ...
+        const registerTabBtn = document.getElementById('register-tab-btn');
+        const loginTabBtn = document.getElementById('login-tab-btn');
+        const registerFormEl = document.getElementById('register-form');
+        const loginFormEl = document.getElementById('login-form');
+        const formRegister = document.getElementById('form-register');
+        const formLogin = document.getElementById('form-login');
+        const registerTogglePasswordBtn = document.getElementById('register-toggle-password');
+        const registerPasswordInput = document.getElementById('register-password');
+        const loginTogglePasswordBtn = document.getElementById('login-toggle-password');
+        const loginPasswordInput = document.getElementById('login-password');
+        const provinsiSelect = document.getElementById('register-provinsi');
+        const kotaSelect = document.getElementById('register-kota');
+        const kecamatanSelect = document.getElementById('register-kecamatan');
+        const kelurahanSelect = document.getElementById('register-kelurahan');
+        // PERBAIKAN URL API: Pastikan tidak ada duplikasi '/api' atau trailing slash yang salah
+        const apiBaseUrl = 'https://www.emsifa.com/api-wilayah-indonesia/api';
 
-        // ... (fungsi showRegisterForm, showLoginForm tidak berubah) ...
-        // ... (fungsi fetchData, populateSelect, resetSelect, loadProvinces tidak berubah) ...
-        // ... (handleLoginOrRegisterSuccess tidak berubah) ...
+        function showRegisterForm() {
+            registerFormEl.classList.remove('hidden');
+            loginFormEl.classList.add('hidden');
+            registerTabBtn.classList.add('tab-active');
+            registerTabBtn.classList.remove('tab-inactive');
+            loginTabBtn.classList.add('tab-inactive');
+            loginTabBtn.classList.remove('tab-active');
+        }
+        function showLoginForm() {
+            loginFormEl.classList.remove('hidden');
+            registerFormEl.classList.add('hidden');
+            loginTabBtn.classList.add('tab-active');
+            loginTabBtn.classList.remove('tab-inactive');
+            registerTabBtn.classList.add('tab-inactive');
+            registerTabBtn.classList.remove('tab-active');
+        }
+        // redirectToDashboard sudah dipindahkan ke scope global
 
-        // ... (event listeners untuk lang-id, lang-en, updateTime, registerTabBtn, loginTabBtn tidak berubah) ...
-        // ... (event listeners untuk provinsiSelect, kotaSelect, kecamatanSelect, kelurahanSelect tidak berubah) ...
-        // ... (event listeners untuk toggle password tidak berubah) ...
+        async function fetchData(url) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) {
+                    console.error(`HTTP error! Status: ${response.status} for URL: ${url}`);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return await response.json();
+            } catch (error) {
+                console.error("Fetch error:", error);
+                return null;
+            }
+        }
+        function populateSelect(selectElement, data, placeholder, valueKey, nameKey) {
+            selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+            if (data && Array.isArray(data)) {
+                data.forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item[valueKey];
+                    option.textContent = item[nameKey];
+                    selectElement.appendChild(option);
+                });
+            }
+            selectElement.disabled = false;
+        }
+        function resetSelect(selectElement, placeholder) {
+            selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+            selectElement.disabled = true;
+        }
+        async function loadProvinces() {
+            resetSelect(provinsiSelect, 'Memuat Provinsi...');
+            // Pastikan URL API di sini benar. apiBaseUrl sudah tidak ada trailing slash.
+            // Jadi `${apiBaseUrl}/provinces.json` akan menghasilkan URL yang tepat:
+            // https://www.emsifa.com/api-wilayah-indonesia/api/provinces.json
+            const result = await fetchData(`${apiBaseUrl}/provinces.json`);
+            populateSelect(provinsiSelect, result, 'Pilih Provinsi', 'id', 'name');
+        }
+
+        // Fungsi ini akan dipanggil setelah login berhasil atau pendaftaran baru
+        async function handleLoginOrRegisterSuccess(user) {
+            try {
+                const token = await user.getIdToken();
+                const response = await fetch(`${backendUrl}/api/users/auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        email: user.email,
+                        name: user.displayName,
+                        phone: user.phoneNumber,
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || 'Gagal berkomunikasi dengan server backend.');
+                }
+
+                const result = await response.json();
+                console.log('Backend response after auth:', result);
+                redirectToDashboard('Login berhasil! Mengalihkan ke dasbor...');
+
+            } catch (error) {
+                console.error("Login handling error:", error);
+                showMessage(`Terjadi kesalahan saat memproses login: ${error.message}`, false);
+                signOut(auth); // Pastikan pengguna logout jika ada masalah dengan backend
+            }
+        }
+
+        document.getElementById('lang-id').addEventListener('click', () => setLanguage('id'));
+        document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+        setInterval(updateTime, 1000);
+        updateTime();
+
+        registerTabBtn.addEventListener('click', showRegisterForm);
+        loginTabBtn.addEventListener('click', showLoginForm);
+
+        provinsiSelect.addEventListener('change', async () => {
+            const selectedProvinceId = provinsiSelect.value;
+            resetSelect(kotaSelect, 'Memuat Kota/Kabupaten...');
+            resetSelect(kecamatanSelect, 'Pilih Kecamatan');
+            resetSelect(kelurahanSelect, 'Pilih Kelurahan/Desa');
+            if (selectedProvinceId) {
+                const result = await fetchData(`${apiBaseUrl}/regencies/${selectedProvinceId}.json`);
+                populateSelect(kotaSelect, result, 'Pilih Kota/Kabupaten', 'id', 'name');
+            }
+        });
+
+        kotaSelect.addEventListener('change', async () => {
+            const selectedCityId = kotaSelect.value;
+            resetSelect(kecamatanSelect, 'Memuat Kecamatan...');
+            resetSelect(kelurahanSelect, 'Pilih Kelurahan/Desa');
+            if (selectedCityId) {
+                const result = await fetchData(`${apiBaseUrl}/districts/${selectedCityId}.json`);
+                populateSelect(kecamatanSelect, result, 'Pilih Kecamatan', 'id', 'name');
+            }
+        });
+
+        kecamatanSelect.addEventListener('change', async () => {
+            const selectedDistrictId = kecamatanSelect.value;
+            resetSelect(kelurahanSelect, 'Memuat Kelurahan/Desa...');
+            if (selectedDistrictId) {
+                const result = await fetchData(`${apiBaseUrl}/villages/${selectedDistrictId}.json`);
+                populateSelect(kelurahanSelect, result, 'Pilih Kelurahan/Desa', 'id', 'name');
+            }
+        });
+
+        registerTogglePasswordBtn.addEventListener('click', () => {
+            const type = registerPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            registerPasswordInput.setAttribute('type', type);
+            registerTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye');
+            registerTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye-slash');
+        });
+        loginTogglePasswordBtn.addEventListener('click', () => {
+            const type = loginPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            loginPasswordInput.setAttribute('type', type);
+            loginTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye');
+            loginTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye-slash');
+        });
 
         formRegister.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -318,9 +462,29 @@
             }
         });
 
-        // formLogin.addEventListener tidak berubah
+        formLogin.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            signInWithEmailAndPassword(auth, email, password) // Menggunakan auth dari getAuth(app)
+                .then((userCredential) => {
+                    handleLoginOrRegisterSuccess(userCredential.user);
+                })
+                .catch((error) => {
+                    let errorMessage = "Kombinasi email dan kata sandi salah.";
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                        errorMessage = "Email atau kata sandi salah. Silakan coba lagi.";
+                    } else if (error.code === 'auth/invalid-email') {
+                        errorMessage = "Format email tidak valid.";
+                    }
+                    console.error("Error login:", error);
+                    showMessage(errorMessage, false);
+                });
+        });
 
-        loadProvinces();
-        showRegisterForm();
+        loadProvinces(); // Panggil ini setelah semua elemen dan fungsi terkait dimuat
+        showRegisterForm(); // Panggil ini untuk menampilkan form register default saat halaman dimuat
     });
-</script>
+    </script>
+</body>
+</html>
