@@ -18,14 +18,14 @@ jobs:
         with:
           node-version: '18' # Sesuaikan versi Node.js jika diperlukan
 
-      - name: Install dependencies (if any) # Instal dependensi frontend jika ada (misal: npm install di folder public)
-        # Jika frontend Anda hanya HTML/CSS/JS murni tanpa package.json di public/, Anda bisa mengomentari baris ini
-        # run: npm install # Jika ada package.json di root public/
-        # run: npm install --prefix public # Jika package.json ada di public/
+      # - name: Install dependencies (if any) # Instal dependensi frontend jika ada (misal: npm install di folder public)
+      #   # Jika frontend Anda hanya HTML/CSS/JS murni tanpa package.json di public/, Anda bisa mengomentari baris ini
+      #   # run: npm install # Jika ada package.json di root public/
+      #   # run: npm install --prefix public # Jika package.json ada di public/
 
-      - name: Build project (if any) # Langkah build frontend jika ada (misal: webpack, vite, dll.)
-        # Jika frontend Anda hanya HTML/CSS/JS murni tanpa proses build, Anda bisa mengomentari baris ini
-        # run: npm run build # Sesuaikan dengan script build Anda
+      # - name: Build project (if any) # Langkah build frontend jika ada (misal: webpack, vite, dll.)
+      #   # Jika frontend Anda hanya HTML/CSS/JS murni tanpa proses build, Anda bisa mengomentari baris ini
+      #   # run: npm run build # Sesuaikan dengan script build Anda
 
       - name: Deploy to GitHub Pages # Langkah utama: Deploy folder public/ ke GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
