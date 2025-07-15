@@ -2,26 +2,31 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 require('dotenv').config(); // Muat variabel lingkungan
-const admin = require('firebase-admin'); // Import Firebase Admin SDK
+const admin = require('firebase-admin');
 
-// Inisialisasi Firebase Admin SDK (pastikan ini di sini, sebelum routes menggunakannya)
+// Inisialisasi Firebase Admin SDK
 try {
+    // PERBAIKAN PENTING DI SINI
+    // Membaca seluruh JSON akun layanan dari variabel lingkungan
+    const serviceAccountJson = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
+
     admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
-        }),
-        databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
+        credential: admin.credential.cert(serviceAccountJson), // Gunakan objek JSON yang sudah di-parse
+        databaseURL: `https://${serviceAccountJson.projectId}.firebaseio.com` // Gunakan projectId dari JSON
     });
     console.log("✅ Firebase Admin SDK berhasil diinisialisasi.");
 } catch (error) {
     console.error("❌ Error menginisialisasi Firebase Admin SDK:", error);
-    process.exit(1); // Keluar dari aplikasi jika inisialisasi gagal
+    // Tambahkan detail error untuk debugging
+    if (error.message.includes("JSON.parse")) {
+        console.error("Pastikan nilai FIREBASE_SERVICE_ACCOUNT_JSON adalah JSON yang valid di Render Environment Variables.");
+    }
+    process.exit(1);
 }
 
+// ... (sisa kode server.js Anda tidak berubah) ...
 
-const usersRoutes = require('./routes/users'); // Pastikan jalurnya seperti ini dan variabelnya 'usersRoutes'
+const usersRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -31,7 +36,6 @@ const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Izinkan permintaan tanpa origin (misal: Postman, permintaan file lokal)
         if (!origin) return callback(null, true);
         if (allowedOrigins.indexOf(origin) === -1) {
             const msg = `Kebijakan CORS untuk situs ini tidak mengizinkan akses dari Origin ${origin}.`;
@@ -46,8 +50,7 @@ app.use(cors({
 app.use(express.json());
 
 // SAJIKAN FILE STATIS DARI FOLDER 'public' (Satu tingkat di atas backend)
-// __dirname adalah direktori server.js (backend), jadi kita perlu mundur satu tingkat (..)
-app.use(express.static(path.join(__dirname, '../public'))); // <--- PERBAIKAN PENTING DI SINI
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Endpoint dasar untuk cek status API
 app.get('/api', (req, res) => {
@@ -55,14 +58,12 @@ app.get('/api', (req, res) => {
 });
 
 // Gunakan Router Pengguna dengan prefix /api/users
-app.use('/api/users', usersRoutes); // <--- Pastikan nama variabel 'usersRoutes'
+app.use('/api/users', usersRoutes);
 
 // Fallback: Arahkan semua request non-API ke index.html di folder public
-// Ini penting agar aplikasi bisa di-refresh di halaman selain halaman utama
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public', 'index.html')); // <--- PERBAIKAN PENTING DI SINI
+  res.sendFile(path.join(__dirname, '../public', 'index.html'));
 });
-
 
 // Jalankan server
 app.listen(PORT, () => {
