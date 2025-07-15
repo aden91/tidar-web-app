@@ -132,12 +132,15 @@
         </div>
     </footer>
 
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+<script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js";
+    // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
+    // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
 
-<script>
-    // --- KONFIGURASI ---
+    // Your web app's Firebase configuration
     const firebaseConfig = {
         apiKey: "AIzaSyBJ776Uf9LVJKo3pgI1_DtcsyCHKAdEcU4",
         authDomain: "tidar-anggota.firebaseapp.com",
@@ -145,14 +148,21 @@
         storageBucket: "tidar-anggota.firebasestorage.app",
         messagingSenderId: "778187622209",
         appId: "1:778187622209:web:642375ca3cc51aba97c3c0"
+        // measurementId: "G-LBHME02NT1" // Aktifkan jika Anda menggunakan Analytics dan tambahkan getAnalytics
     };
 
-    if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
-    }
-    const auth = firebase.auth();
-    const storage = firebase.storage();
-    const backendUrl = 'https://tidar-app.onrender.com/'; // Pastikan ini sesuai untuk pengujian lokal
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    // const analytics = getAnalytics(app); // Aktifkan jika Anda menggunakan Analytics
+
+    // Dapatkan instance layanan Firebase
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+    // const db = getFirestore(app); // Aktifkan jika Anda menggunakan Firestore di frontend
+
+    // URL ini akan menunjuk ke server backend Anda setelah di-deploy
+    // Ganti dengan URL backend production Anda
+    const backendUrl = 'https://tidar-backend-api.onrender.com'; // Ganti dengan URL backend Render Anda yang sebenarnya
 
     // --- FUNGSI BANTUAN ---
     function showContentMessage(message, type = 'info') {

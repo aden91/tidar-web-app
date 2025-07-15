@@ -35,7 +35,7 @@
     <div class="min-h-screen flex flex-col md:flex-row">
 
         <div class="w-full md:w-1/2 text-gray-800 flex flex-col justify-center items-center p-8 md:p-12 text-center"
-             style="background-image: linear-gradient(rgba(229, 231, 235, 0.9), rgba(229, 231, 235, 0.9)), url('tidarhome.png'); background-size: cover; background-position: center;">
+             style="background-image: linear-gradient(rgba(229, 231, 235, 0.9), rgba(229, 231, 235, 0.9)), url('tidarhome.jpg'); background-size: cover; background-position: center;">
             <div class="max-w-md">
                 <img src="logo-tidar.png" alt="Logo TIDAR" class="h-24 w-24 mx-auto mb-6">
                 <h1 class="text-3xl md:text-4xl font-extrabold mb-3">Tunas Indonesia Raya</h1>
@@ -162,9 +162,15 @@
         </div>
     </div>
 
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
-    <script>
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js";
+        // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
+        // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
+
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyBJ776Uf9LVJKo3pgI1_DtcsyCHKAdEcU4",
             authDomain: "tidar-anggota.firebaseapp.com",
@@ -175,11 +181,15 @@
             measurementId: "G-LBHME02NT1"
         };
 
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        const auth = firebase.auth();
-        const backendUrl = 'https://tidar-app.onrender.com/'; // Pastikan ini sesuai untuk pengujian lokal
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app); // Aktifkan jika Anda menggunakan Analytics
+
+        // Dapatkan instance layanan Firebase
+        const auth = getAuth(app);
+        // const db = getFirestore(app); // Aktifkan jika Anda menggunakan Firestore di frontend
+
+        const backendUrl = 'https://tidar-backend-api.onrender.com'; // Ganti dengan URL backend Render Anda yang sebenarnya
 
         const translations = {
             id: { register_tab: "Daftar", login_tab: "Masuk", register_title: "Buat Akun Baru", personal_data: "Data Diri", full_name: "Nama Lengkap", birth_place: "Tempat Lahir", birth_date: "Tanggal Lahir", address_data: "Alamat Sesuai KTP", province: "Provinsi", city: "Kota/Kabupaten", district: "Kecamatan", village: "Kelurahan/Desa", full_address: "Alamat Lengkap", account_info: "Informasi Akun", email_label: "Alamat Email", phone_number: "Nomor Telepon", password_label: "Kata Sandi", register_button: "Daftar Sekarang", login_title: "Selamat Datang Kembali", login_subtitle: "Masuk ke akun Anda untuk melanjutkan.", login_button: "Masuk", or_login_with: "Atau masuk dengan", google_login: "Masuk dengan Google", phone_login: "Masuk dengan Nomor Telepon" },
@@ -395,7 +405,7 @@
                     
                     // Setelah akun dibuat di Firebase Auth, kirim data lengkap ke backend
                     const token = await user.getIdToken();
-                    const response = await fetch(`${backendUrl}/api/users/register`, {
+                    [cite_start]const response = await fetch(`${backendUrl}/api/users/register`, [cite: 1] {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ ...formData, uid: user.uid })
