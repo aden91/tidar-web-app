@@ -132,11 +132,12 @@
         </div>
     </footer>
 
+<!-- SCRIPT UTAMA APLIKASI -->
 <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
-    import { getStorage } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js";
     // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
     // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
 
@@ -202,7 +203,7 @@
         const uploadProgressContainer = document.getElementById('upload-progress-container');
         const uploadProgressBar = document.getElementById('upload-progress-bar');
 
-        auth.onAuthStateChanged(async function(user) {
+        onAuthStateChanged(auth, async (user) => { // Menggunakan onAuthStateChanged dari import
             if (user) {
                 const displayName = user.displayName || 'Nama Belum Diatur';
                 const email = user.email || 'Email tidak tersedia';
@@ -223,7 +224,7 @@
                     // Tangani respons 403 atau 401 secara eksplisit untuk logout
                     if (response.status === 403 || response.status === 401) {
                          alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-                         auth.signOut().then(() => { window.location.href = './index.html'; });
+                         signOut(auth).then(() => { window.location.href = './index.html'; }); // Menggunakan signOut dari import
                          return; // Penting untuk menghentikan eksekusi lebih lanjut
                     }
 
@@ -366,8 +367,8 @@
             console.log("Path Storage yang Dibuat:", `profile_pictures/${user.uid}/${file.name}`);
             // --- AKHIR KODE CONSOLE.LOGS ---
 
-            const fileRef = storage.ref(`profile_pictures/${user.uid}/${file.name}`);
-            const uploadTask = fileRef.put(file);
+            const fileRef = ref(storage, `profile_pictures/${user.uid}/${file.name}`); // Menggunakan ref dari import
+            const uploadTask = uploadBytesResumable(fileRef, file); // Menggunakan uploadBytesResumable dari import
             uploadProgressContainer.classList.remove('hidden');
             uploadTask.on('state_changed',
                 (snapshot) => {
@@ -379,7 +380,7 @@
                     uploadProgressContainer.classList.add('hidden');
                 },
                 () => {
-                    uploadTask.snapshot.ref.getDownloadURL().then(async (downloadURL) => {
+                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => { // Menggunakan getDownloadURL dari import
                         console.log("Download URL:", downloadURL); // Cek apakah URL valid
                         try {
                             await user.updateProfile({ photoURL: downloadURL });
@@ -399,7 +400,7 @@
         });
 
         logoutBtn.addEventListener('click', () => {
-            auth.signOut().then(() => { window.location.href = './index.html'; });
+            signOut(auth).then(() => { window.location.href = './index.html'; }); // Menggunakan signOut dari import
         });
     });
 </script>

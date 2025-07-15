@@ -162,10 +162,11 @@
         </div>
     </div>
 
+    <!-- SCRIPT UTAMA APLIKASI -->
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-        import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js";
         // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
         // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
@@ -399,13 +400,13 @@
                     phone: document.getElementById('register-phone').value,
                 };
                 try {
-                    const userCredential = await auth.createUserWithEmailAndPassword(formData.email, password);
+                    const userCredential = await createUserWithEmailAndPassword(auth, formData.email, password); // Menggunakan auth dari getAuth(app)
                     const user = userCredential.user;
                     await user.updateProfile({ displayName: formData.name });
                     
                     // Setelah akun dibuat di Firebase Auth, kirim data lengkap ke backend
                     const token = await user.getIdToken();
-                    [cite_start]const response = await fetch(`${backendUrl}/api/users/register`, [cite: 1] {
+                    const response = await fetch(`${backendUrl}/api/users/register`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
                         body: JSON.stringify({ ...formData, uid: user.uid })
@@ -444,7 +445,7 @@
                 e.preventDefault();
                 const email = document.getElementById('login-email').value;
                 const password = document.getElementById('login-password').value;
-                auth.signInWithEmailAndPassword(email, password)
+                signInWithEmailAndPassword(auth, email, password) // Menggunakan auth dari getAuth(app)
                     .then((userCredential) => {
                         handleLoginOrRegisterSuccess(userCredential.user);
                     })
@@ -464,7 +465,7 @@
             showRegisterForm(); // Panggil ini untuk menampilkan form register default
 
             // Cek status autentikasi saat pertama kali load halaman
-            auth.onAuthStateChanged(user => {
+            onAuthStateChanged(auth, user => { // Menggunakan auth dari getAuth(app)
                 if (user) {
                     // Jika user sudah login, langsung arahkan ke dashboard
                     redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
