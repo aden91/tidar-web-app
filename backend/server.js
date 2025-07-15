@@ -1,23 +1,16 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-require('dotenv').config(); // Memuat variabel lingkungan dari .env
+require('dotenv').config(); // Muat variabel lingkungan
 const admin = require('firebase-admin'); // Import Firebase Admin SDK
 
-const usersRoutes = require('./routes/users');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Inisialisasi Firebase Admin SDK
-// Menggunakan variabel lingkungan agar aman di produksi 
+// Inisialisasi Firebase Admin SDK (pastikan ini di sini, sebelum routes menggunakannya)
 try {
     admin.initializeApp({
         credential: admin.credential.cert({
             projectId: process.env.FIREBASE_PROJECT_ID,
             clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            // Penting: Mengganti '\\n' menjadi karakter newline aktual
-            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n') 
+            privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n')
         }),
         databaseURL: `https://${process.env.FIREBASE_PROJECT_ID}.firebaseio.com`
     });
@@ -27,8 +20,13 @@ try {
     process.exit(1); // Keluar dari aplikasi jika inisialisasi gagal
 }
 
-// Konfigurasi CORS
-// Mengizinkan berbagai origin, termasuk localhost dan URL GitHub Pages Anda
+
+const usersRoutes = require('./routes/users'); // Pastikan jalurnya seperti ini dan variabelnya 'usersRoutes'
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Konfigurasi CORS (menggunakan variabel lingkungan)
 const allowedOrigins = process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',') : [];
 
 app.use(cors({
@@ -45,25 +43,28 @@ app.use(cors({
     credentials: true,
     optionsSuccessStatus: 204
 }));
-app.use(express.json()); // Untuk mengurai body permintaan JSON
+app.use(express.json());
 
-// Serving file statis dari folder 'public'
-app.use(express.static(path.join(__dirname, '../public')));
+// SAJIKAN FILE STATIS DARI FOLDER 'public' (Satu tingkat di atas backend)
+// __dirname adalah direktori server.js (backend), jadi kita perlu mundur satu tingkat (..)
+app.use(express.static(path.join(__dirname, '../public'))); // <--- PERBAIKAN PENTING DI SINI
 
-// Rute API
+// Endpoint dasar untuk cek status API
 app.get('/api', (req, res) => {
   res.send('✅ Server API TIDAR Berjalan!');
 });
 
-// Menggunakan rute users
-app.use('/api/users', usersRoutes);
+// Gunakan Router Pengguna dengan prefix /api/users
+app.use('/api/users', usersRoutes); // <--- Pastikan nama variabel 'usersRoutes'
 
-// Rute catch-all untuk serving index.html (untuk SPA atau refresh halaman)
+// Fallback: Arahkan semua request non-API ke index.html di folder public
+// Ini penting agar aplikasi bisa di-refresh di halaman selain halaman utama
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public', 'index.html'));
+  res.sendFile(path.join(__dirname, '../public', 'index.html')); // <--- PERBAIKAN PENTING DI SINI
 });
 
-// Mulai server
+
+// Jalankan server
 app.listen(PORT, () => {
   console.log(`🚀 Server aktif di port ${PORT}`);
 });
