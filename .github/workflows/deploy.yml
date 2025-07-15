@@ -8,6 +8,9 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest # Jalankan job ini di runner Ubuntu terbaru
+    # Tambahkan izin untuk GITHUB_TOKEN di sini
+    permissions:
+      contents: write # Memberikan izin tulis untuk konten repositori
 
     steps:
       - name: Checkout repository # Langkah pertama: Ambil kode dari repositori
