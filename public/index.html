@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pendaftaran Anggota - Tunas Indonesia Raya (TIDAR)</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-active { background-color: #c53030; color: white; }
+        .tab-inactive { background-color: #e2e8f0; color: #4a5568; }
+        .message-box {
+            display: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .message-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        select:disabled {
+            background-color: #f3f4f6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div class="min-h-screen flex flex-col md:flex-row">
+
+        <div class="w-full md:w-1/2 text-gray-800 flex flex-col justify-center items-center p-8 md:p-12 text-center"
+             style="background-image: linear-gradient(rgba(229, 231, 235, 0.9), rgba(229, 231, 235, 0.9)), url('tidarhome.png'); background-size: cover; background-position: center;">
+            <div class="max-w-md">
+                <img src="logo-tidar.png" alt="Logo TIDAR" class="h-24 w-24 mx-auto mb-6">
+                <h1 class="text-3xl md:text-4xl font-extrabold mb-3">Tunas Indonesia Raya</h1>
+                <p class="text-gray-600 text-lg">Bergabunglah bersama kami, menjadi garda terdepan pemuda Indonesia.</p>
+            </div>
+        </div>
+
+        <div class="w-full md:w-1/2 flex flex-col justify-center items-center p-6 sm:p-8">
+            <div class="max-w-xl w-full bg-white p-8 rounded-2xl shadow-lg">
+
+                <div class="flex justify-between items-center mb-4">
+                    <div id="datetime-container" class="text-sm text-gray-500"></div>
+                    <div class="flex space-x-2 text-sm">
+                        <button id="lang-id" class="font-bold text-red-600">ID</button>
+                        <span class="text-gray-300">|</span>
+                        <button id="lang-en" class="text-gray-500">EN</button>
+                    </div>
+                </div>
+
+                <div class="flex rounded-lg shadow-sm mb-8">
+                    <button id="register-tab-btn" class="w-1/2 p-3 font-bold rounded-l-lg transition-colors duration-300" data-translate="register_tab">Daftar</button>
+                    <button id="login-tab-btn" class="w-1/2 p-3 font-bold rounded-r-lg transition-colors duration-300" data-translate="login_tab">Masuk</button>
+                </div>
+
+                <div id="message-box" class="message-box"></div>
+
+                <div id="register-form">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6" data-translate="register_title">Buat Akun Baru</h2>
+                    <form id="form-register" class="space-y-4">
+                        <h3 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4" data-translate="personal_data">Data Diri</h3>
+                        <div>
+                            <label for="register-name" class="block text-sm font-medium text-gray-700 mb-1" data-translate="full_name">Nama Lengkap</label>
+                            <input type="text" id="register-name" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="register-tempat-lahir" class="block text-sm font-medium text-gray-700 mb-1" data-translate="birth_place">Tempat Lahir</label>
+                                <input type="text" id="register-tempat-lahir" required class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                            <div>
+                                <label for="register-tanggal-lahir" class="block text-sm font-medium text-gray-700 mb-1" data-translate="birth_date">Tanggal Lahir</label>
+                                <input type="date" id="register-tanggal-lahir" required class="w-full p-3 border border-gray-300 rounded-lg">
+                            </div>
+                        </div>
+
+                        <h3 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-6" data-translate="address_data">Alamat Sesuai KTP</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="register-provinsi" class="block text-sm font-medium text-gray-700 mb-1" data-translate="province">Provinsi</label>
+                                <select id="register-provinsi" required class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                            </div>
+                            <div>
+                                <label for="register-kota" class="block text-sm font-medium text-gray-700 mb-1" data-translate="city">Kota/Kabupaten</label>
+                                <select id="register-kota" required disabled class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                            </div>
+                        </div>
+                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="register-kecamatan" class="block text-sm font-medium text-gray-700 mb-1" data-translate="district">Kecamatan</label>
+                                <select id="register-kecamatan" required disabled class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                            </div>
+                            <div>
+                                <label for="register-kelurahan" class="block text-sm font-medium text-gray-700 mb-1" data-translate="village">Kelurahan/Desa</label>
+                                <select id="register-kelurahan" required disabled class="w-full p-3 border border-gray-300 rounded-lg"></select>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="register-alamat" class="block text-sm font-medium text-gray-700 mb-1" data-translate="full_address">Alamat Lengkap</label>
+                            <textarea id="register-alamat" rows="3" required class="w-full p-3 border border-gray-300 rounded-lg"></textarea>
+                        </div>
+
+                        <h3 class="text-lg font-semibold text-gray-700 border-b pb-2 mb-4 mt-6" data-translate="account_info">Informasi Akun</h3>
+                        <div>
+                            <label for="register-email" class="block text-sm font-medium text-gray-700 mb-1" data-translate="email_label">Alamat Email</label>
+                            <input type="email" id="register-email" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="register-phone" class="block text-sm font-medium text-gray-700 mb-1" data-translate="phone_number">Nomor Telepon</label>
+                            <input type="tel" id="register-phone" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="register-password" class="block text-sm font-medium text-gray-700 mb-1" data-translate="password_label">Kata Sandi</label>
+                            <div class="relative">
+                                <input type="password" id="register-password" placeholder="Min. 8 karakter dengan simbol" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                <button type="button" id="register-toggle-password" class="absolute top-0 right-0 h-full px-4 text-gray-500">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="pt-6">
+                            <button type="submit" class="w-full bg-red-600 text-white font-bold p-3 rounded-lg hover:bg-red-700" data-translate="register_button">
+                                Daftar Sekarang
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="login-form" class="hidden">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2" data-translate="login_title">Selamat Datang Kembali</h2>
+                    <p class="text-gray-600 mb-6" data-translate="login_subtitle">Masuk ke akun Anda untuk melanjutkan.</p>
+                    <form id="form-login" class="space-y-4">
+                        <div>
+                            <label for="login-email" class="block text-sm font-medium text-gray-700 mb-1" data-translate="email_label">Alamat Email</label>
+                            <input type="email" id="login-email" name="email" placeholder="contoh@email.com" required class="w-full p-3 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label for="login-password" class="block text-sm font-medium text-gray-700 mb-1" data-translate="password_label">Kata Sandi</label>
+                            <div class="relative">
+                                <input type="password" id="login-password" name="password" required class="w-full p-3 border border-gray-300 rounded-lg">
+                                <button type="button" id="login-toggle-password" class="absolute top-0 right-0 h-full px-4 text-gray-500">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <button type="submit" class="w-full bg-red-600 text-white font-bold p-3 rounded-lg hover:bg-red-700" data-translate="login_button">
+                                Masuk
+                            </button>
+                        </div>
+                    </form>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBJ776Uf9LVJKo3pgI1_DtcsyCHKAdEcU4",
+            authDomain: "tidar-anggota.firebaseapp.com",
+            projectId: "tidar-anggota",
+            storageBucket: "tidar-anggota.firebasestorage.app",
+            messagingSenderId: "778187622209",
+            appId: "1:778187622209:web:642375ca3cc51aba97c3c0",
+            measurementId: "G-LBHME02NT1"
+        };
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const backendUrl = 'https://your-tidar-backend-api.onrender.com'; // Pastikan ini sesuai untuk pengujian lokal
+
+        const translations = {
+            id: { register_tab: "Daftar", login_tab: "Masuk", register_title: "Buat Akun Baru", personal_data: "Data Diri", full_name: "Nama Lengkap", birth_place: "Tempat Lahir", birth_date: "Tanggal Lahir", address_data: "Alamat Sesuai KTP", province: "Provinsi", city: "Kota/Kabupaten", district: "Kecamatan", village: "Kelurahan/Desa", full_address: "Alamat Lengkap", account_info: "Informasi Akun", email_label: "Alamat Email", phone_number: "Nomor Telepon", password_label: "Kata Sandi", register_button: "Daftar Sekarang", login_title: "Selamat Datang Kembali", login_subtitle: "Masuk ke akun Anda untuk melanjutkan.", login_button: "Masuk", or_login_with: "Atau masuk dengan", google_login: "Masuk dengan Google", phone_login: "Masuk dengan Nomor Telepon" },
+            en: { register_tab: "Register", login_tab: "Login", register_title: "Create New Account", personal_data: "Personal Data", full_name: "Full Name", birth_place: "Place of Birth", birth_date: "Date of Birth", address_data: "Address (as per ID)", province: "Province", city: "City/Regency", district: "District", village: "Village", full_address: "Full Address", account_info: "Account Information", email_label: "Email Address", phone_number: "Phone Number", password_label: "Password", register_button: "Register Now", login_title: "Welcome Back", login_subtitle: "Login to your account to continue.", login_button: "Login", or_login_with: "Or login with", google_login: "Login with Google", phone_login: "Login with Phone Number" }
+        };
+        let currentLang = 'id';
+        function setLanguage(lang) {
+            currentLang = lang;
+            document.documentElement.lang = lang;
+            document.querySelectorAll('[data-translate]').forEach(el => {
+                const key = el.getAttribute('data-translate');
+                if (translations[lang][key]) el.textContent = translations[lang][key];
+            });
+            document.getElementById('lang-id').classList.toggle('text-red-600', lang === 'id');
+            document.getElementById('lang-id').classList.toggle('font-bold', lang === 'id');
+            document.getElementById('lang-id').classList.toggle('text-gray-500', lang !== 'id');
+            document.getElementById('lang-en').classList.toggle('text-red-600', lang === 'en');
+            document.getElementById('lang-en').classList.toggle('font-bold', lang === 'en');
+            document.getElementById('lang-en').classList.toggle('text-gray-500', lang !== 'en');
+            updateTime();
+        }
+        function updateTime() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('datetime-container').textContent = now.toLocaleDateString(currentLang === 'id' ? 'id-ID' : 'en-US', options);
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerTabBtn = document.getElementById('register-tab-btn');
+            const loginTabBtn = document.getElementById('login-tab-btn');
+            const registerFormEl = document.getElementById('register-form');
+            const loginFormEl = document.getElementById('login-form');
+            const formRegister = document.getElementById('form-register');
+            const formLogin = document.getElementById('form-login');
+            const messageBox = document.getElementById('message-box');
+            const registerTogglePasswordBtn = document.getElementById('register-toggle-password');
+            const registerPasswordInput = document.getElementById('register-password');
+            const loginTogglePasswordBtn = document.getElementById('login-toggle-password');
+            const loginPasswordInput = document.getElementById('login-password');
+            // Hapus atau komen baris di bawah ini jika tidak ada tombol Google/Phone login di HTML
+            // const googleLoginBtn = document.getElementById('google-login-btn');
+            // const phoneLoginBtn = document.getElementById('phone-login-btn');
+            const provinsiSelect = document.getElementById('register-provinsi');
+            const kotaSelect = document.getElementById('register-kota');
+            const kecamatanSelect = document.getElementById('register-kecamatan');
+            const kelurahanSelect = document.getElementById('register-kelurahan');
+            const apiBaseUrl = 'https://www.emsifa.com/api-wilayah-indonesia/api';
+
+            function showMessage(message, isSuccess) {
+                messageBox.textContent = message;
+                messageBox.className = 'message-box';
+                messageBox.classList.add(isSuccess ? 'message-success' : 'message-error');
+                messageBox.style.display = 'block';
+            }
+            function showRegisterForm() {
+                registerFormEl.classList.remove('hidden');
+                loginFormEl.classList.add('hidden');
+                registerTabBtn.classList.add('tab-active');
+                registerTabBtn.classList.remove('tab-inactive');
+                loginTabBtn.classList.add('tab-inactive');
+                loginTabBtn.classList.remove('tab-active');
+            }
+            function showLoginForm() {
+                loginFormEl.classList.remove('hidden');
+                registerFormEl.classList.add('hidden');
+                loginTabBtn.classList.add('tab-active');
+                loginTabBtn.classList.remove('tab-inactive');
+                registerTabBtn.classList.add('tab-inactive');
+                registerTabBtn.classList.remove('tab-active');
+            }
+            function redirectToDashboard(successMessage) {
+                showMessage(successMessage, true);
+                setTimeout(() => { window.location.href = './dashboard.html'; }, 1500);
+            }
+
+            async function fetchData(url) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error("Fetch error:", error);
+                    return null;
+                }
+            }
+            function populateSelect(selectElement, data, placeholder, valueKey, nameKey) {
+                selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+                if (data && Array.isArray(data)) {
+                    data.forEach(item => {
+                        const option = document.createElement('option');
+                        option.value = item[valueKey];
+                        option.textContent = item[nameKey];
+                        selectElement.appendChild(option);
+                    });
+                }
+                selectElement.disabled = false;
+            }
+            function resetSelect(selectElement, placeholder) {
+                selectElement.innerHTML = `<option value="">${placeholder}</option>`;
+                selectElement.disabled = true;
+            }
+            async function loadProvinces() {
+                resetSelect(provinsiSelect, 'Memuat Provinsi...');
+                const result = await fetchData(`${apiBaseUrl}/provinces.json`);
+                populateSelect(provinsiSelect, result, 'Pilih Provinsi', 'id', 'name');
+            }
+
+            // Fungsi ini akan dipanggil setelah login berhasil atau pendaftaran baru
+            async function handleLoginOrRegisterSuccess(user) {
+                try {
+                    const token = await user.getIdToken();
+                    const response = await fetch(`${backendUrl}/api/users/auth`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({
+                            uid: user.uid,
+                            email: user.email,
+                            name: user.displayName,
+                            phone: user.phoneNumber,
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.message || 'Gagal berkomunikasi dengan server backend.');
+                    }
+
+                    const result = await response.json();
+                    console.log('Backend response after auth:', result);
+                    redirectToDashboard('Login berhasil! Mengalihkan ke dasbor...');
+
+                } catch (error) {
+                    console.error("Login handling error:", error);
+                    showMessage(`Terjadi kesalahan saat memproses login: ${error.message}`, false);
+                    auth.signOut(); // Pastikan pengguna logout jika ada masalah dengan backend
+                }
+            }
+
+            document.getElementById('lang-id').addEventListener('click', () => setLanguage('id'));
+            document.getElementById('lang-en').addEventListener('click', () => setLanguage('en'));
+            setInterval(updateTime, 1000);
+            updateTime();
+
+            registerTabBtn.addEventListener('click', showRegisterForm);
+            loginTabBtn.addEventListener('click', showLoginForm);
+
+            provinsiSelect.addEventListener('change', async () => {
+                const selectedProvinceId = provinsiSelect.value;
+                resetSelect(kotaSelect, 'Memuat Kota/Kabupaten...');
+                resetSelect(kecamatanSelect, 'Pilih Kecamatan');
+                resetSelect(kelurahanSelect, 'Pilih Kelurahan/Desa');
+                if (selectedProvinceId) {
+                    const result = await fetchData(`${apiBaseUrl}/regencies/${selectedProvinceId}.json`);
+                    populateSelect(kotaSelect, result, 'Pilih Kota/Kabupaten', 'id', 'name');
+                }
+            });
+
+            kotaSelect.addEventListener('change', async () => {
+                const selectedCityId = kotaSelect.value;
+                resetSelect(kecamatanSelect, 'Memuat Kecamatan...');
+                resetSelect(kelurahanSelect, 'Pilih Kelurahan/Desa');
+                if (selectedCityId) {
+                    const result = await fetchData(`${apiBaseUrl}/districts/${selectedCityId}.json`);
+                    populateSelect(kecamatanSelect, result, 'Pilih Kecamatan', 'id', 'name');
+                }
+            });
+
+            kecamatanSelect.addEventListener('change', async () => {
+                const selectedDistrictId = kecamatanSelect.value;
+                resetSelect(kelurahanSelect, 'Memuat Kelurahan/Desa...');
+                if (selectedDistrictId) {
+                    const result = await fetchData(`${apiBaseUrl}/villages/${selectedDistrictId}.json`);
+                    populateSelect(kelurahanSelect, result, 'Pilih Kelurahan/Desa', 'id', 'name');
+                }
+            });
+
+            registerTogglePasswordBtn.addEventListener('click', () => {
+                const type = registerPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                registerPasswordInput.setAttribute('type', type);
+                registerTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye');
+                registerTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+            loginTogglePasswordBtn.addEventListener('click', () => {
+                const type = loginPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                loginPasswordInput.setAttribute('type', type);
+                loginTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye');
+                loginTogglePasswordBtn.querySelector('i').classList.toggle('fa-eye-slash');
+            });
+
+            formRegister.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const password = registerPasswordInput.value;
+                if (!/^(?=.*[\W_]).{8,}$/.test(password)) {
+                    showMessage('Kata sandi harus minimal 8 karakter dan mengandung setidaknya satu simbol.', false);
+                    return;
+                }
+                const formData = {
+                    name: document.getElementById('register-name').value,
+                    tempatLahir: document.getElementById('register-tempat-lahir').value,
+                    tanggalLahir: document.getElementById('register-tanggal-lahir').value,
+                    provinsi: provinsiSelect.options[provinsiSelect.selectedIndex].text,
+                    kota: kotaSelect.options[kotaSelect.selectedIndex].text,
+                    kecamatan: kecamatanSelect.options[kecamatanSelect.selectedIndex].text,
+                    kelurahan: kelurahanSelect.options[kelurahanSelect.selectedIndex].text,
+                    alamat: document.getElementById('register-alamat').value,
+                    email: document.getElementById('register-email').value,
+                    phone: document.getElementById('register-phone').value,
+                };
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(formData.email, password);
+                    const user = userCredential.user;
+                    await user.updateProfile({ displayName: formData.name });
+                    
+                    // Setelah akun dibuat di Firebase Auth, kirim data lengkap ke backend
+                    const token = await user.getIdToken();
+                    const response = await fetch(`${backendUrl}/api/users/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                        body: JSON.stringify({ ...formData, uid: user.uid })
+                    });
+                    const result = await response.json();
+
+                    if (!response.ok || !result.success) {
+                        // Jika backend gagal menyimpan data, hapus user dari Firebase Auth (opsional tapi disarankan)
+                        await user.delete();
+                        throw new Error(result.message || 'Gagal menyimpan data ke backend.');
+                    }
+
+                    showMessage(result.message, result.success);
+                    formRegister.reset();
+                    resetSelect(kotaSelect, 'Pilih Kota/Kabupaten');
+                    resetSelect(kecamatanSelect, 'Pilih Kecamatan');
+                    resetSelect(kelurahanSelect, 'Pilih Kelurahan/Desa');
+                    setTimeout(showLoginForm, 2000); // Setelah register berhasil, arahkan ke form login
+
+                } catch (error) {
+                    let errorMessage = "Terjadi kesalahan pendaftaran.";
+                    if (error.code === 'auth/email-already-in-use') {
+                        errorMessage = "Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.";
+                    } else if (error.code === 'auth/weak-password') {
+                        errorMessage = "Kata sandi terlalu lemah. Harap gunakan kata sandi yang lebih kuat.";
+                    }
+                    else {
+                         errorMessage = error.message;
+                    }
+                    console.error("Error pendaftaran:", error);
+                    showMessage(errorMessage, false);
+                }
+            });
+
+            formLogin.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
+                auth.signInWithEmailAndPassword(email, password)
+                    .then((userCredential) => {
+                        handleLoginOrRegisterSuccess(userCredential.user);
+                    })
+                    .catch((error) => {
+                        let errorMessage = "Kombinasi email dan kata sandi salah.";
+                        if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+                            errorMessage = "Email atau kata sandi salah. Silakan coba lagi.";
+                        } else if (error.code === 'auth/invalid-email') {
+                            errorMessage = "Format email tidak valid.";
+                        }
+                        console.error("Error login:", error);
+                        showMessage(errorMessage, false);
+                    });
+            });
+
+            loadProvinces(); // Panggil ini setelah semua elemen dan fungsi terkait dimuat
+            showRegisterForm(); // Panggil ini untuk menampilkan form register default
+
+            // Cek status autentikasi saat pertama kali load halaman
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // Jika user sudah login, langsung arahkan ke dashboard
+                    redirectToDashboard('Anda sudah login. Mengalihkan ke dasbor...');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
