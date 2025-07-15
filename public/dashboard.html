@@ -134,29 +134,86 @@
 
 <!-- SCRIPT UTAMA APLIKASI -->
 <script type="module">
-    // ... (kode import dan firebaseConfig Anda) ...
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js";
+    // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
+    // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
 
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+        apiKey: "AIzaSyBJ776Uf9LVJKo3pgI1_DtcsyCHKAdEcU4",
+        authDomain: "tidar-anggota.firebaseapp.com",
+        projectId: "tidar-anggota",
+        storageBucket: "tidar-anggota.firebasestorage.app",
+        messagingSenderId: "778187622209",
+        appId: "1:778187622209:web:642375ca3cc51aba97c3c0"
+        // measurementId: "G-LBHME02NT1" // Aktifkan jika Anda menggunakan Analytics dan tambahkan getAnalytics
+    };
+
+    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
+    // const analytics = getAnalytics(app); // Aktifkan jika Anda menggunakan Analytics
+
+    // Dapatkan instance layanan Firebase
     const auth = getAuth(app);
     const storage = getStorage(app);
+    // const db = getFirestore(app); // Aktifkan jika Anda menggunakan Firestore di frontend
 
-    const backendUrl = 'https://tidar-web.onrender.com'; // Pastikan ini URL backend Render Anda yang sebenarnya
+    // URL ini akan menunjuk ke server backend Anda setelah di-deploy
+    // Ganti dengan URL backend production Anda
+    const backendUrl = 'https://tidar-web.onrender.com'; // Ganti dengan URL backend Render Anda yang sebenarnya
 
-    // ... (fungsi showContentMessage, formatIndonesianDate) ...
+    // --- FUNGSI BANTUAN ---
+    function showContentMessage(message, type = 'info') {
+        const colors = {
+            info: 'bg-blue-100 border-blue-500 text-blue-700',
+            success: 'bg-green-100 border-green-500 text-green-700',
+            warning: 'bg-yellow-100 border-yellow-500 text-yellow-700',
+            error: 'bg-red-100 border-red-500 text-red-700',
+        };
+        const contentContainer = document.getElementById('content-container');
+        contentContainer.innerHTML = `
+            <div class="${colors[type]} border-l-4 p-4 rounded-xl shadow-lg" role="alert">
+                <p class="font-bold">${message.title}</p>
+                <p>${message.body}</p>
+            </div>
+        `;
+    }
 
+    function formatIndonesianDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return dateString;
+        const options = { year: 'numeric', month: 'long', day: 'numeric' };
+        return date.toLocaleDateString('id-ID', options);
+    }
+
+    // --- EVENT LISTENER UTAMA ---
     document.addEventListener('DOMContentLoaded', function() {
-        // ... (deklarasi variabel DOM Anda) ...
+        const logoutBtn = document.getElementById('logout-btn');
+        const userPhotoProfileEl = document.getElementById('user-photo-profile');
+        const userNameProfileEl = document.getElementById('user-name-profile');
+        const userEmailProfileEl = document.getElementById('user-email-profile');
+        const statusContainer = document.getElementById('status-container');
+        const photoUploadInput = document.getElementById('photo-upload-input');
 
-        onAuthStateChanged(auth, async (user) => {
+        // Deklarasi variabel progress container dan progress bar HANYA SATU KALI DI SINI
+        const uploadProgressContainer = document.getElementById('upload-progress-container');
+        const uploadProgressBar = document.getElementById('upload-progress-bar');
+
+        onAuthStateChanged(auth, async (user) => { // Menggunakan onAuthStateChanged dari import
             if (user) {
                 const displayName = user.displayName || 'Nama Belum Diatur';
                 const email = user.email || 'Email tidak tersedia';
                 const uid = user.uid;
+                // Selalu tetapkan default jika photoURL kosong
                 const photoURL = user.photoURL || 'https://placehold.co/150x150/e0e0e0/333?text=Foto';
 
                 userNameProfileEl.textContent = displayName;
                 userEmailProfileEl.textContent = email;
-                userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`;
+                userPhotoProfileEl.src = `${photoURL}?t=${new Date().getTime()}`; // Tambahkan cache-busting untuk foto
 
                 let userData = null; // Deklarasikan userData di sini agar bisa diakses di luar try/catch
 
@@ -166,10 +223,11 @@
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
 
+                    // Tangani respons 403 atau 401 secara eksplisit untuk logout
                     if (response.status === 403 || response.status === 401) {
                          alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-                         signOut(auth).then(() => { window.location.href = './index.html'; });
-                         return;
+                         signOut(auth).then(() => { window.location.href = './index.html'; }); // Menggunakan signOut dari import
+                         return; // Penting untuk menghentikan eksekusi lebih lanjut
                     }
 
                     if (!response.ok) {
@@ -189,14 +247,17 @@
                     // Hanya tampilkan KTA jika diverifikasi DAN ada foto profil yang valid
                     if (userData.isVerified && user.photoURL) { // Gunakan user.photoURL yang asli dari Firebase
                         const contentContainer = document.getElementById('content-container');
+                        // Gunakan window.location.origin untuk QR Code agar fleksibel di localhost atau live
                         const qrCodeData = `${window.location.origin}/dashboard.html?uid=${uid}`;
                         const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=64x64&data=${encodeURIComponent(qrCodeData)}&qzone=1&margin=0`;
                         
+                        // Perbaiki logika TTL: hanya tambahkan koma jika kedua bagian ada
                         const ttlParts = [];
                         if (userData.tempatLahir) ttlParts.push(userData.tempatLahir);
                         if (userData.tanggalLahir) ttlParts.push(formatIndonesianDate(userData.tanggalLahir));
                         const ttl = ttlParts.join(', ');
 
+                        // Perbaiki logika fullAddress: hanya gabungkan bagian yang ada
                         const addressParts = [];
                         if (userData.alamat?.detail) addressParts.push(userData.alamat.detail);
                         if (userData.alamat?.kelurahan) addressParts.push(userData.alamat.kelurahan);
