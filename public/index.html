@@ -165,7 +165,8 @@
     <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    // PERHATIKAN PENAMBAHAN 'updateProfile' DI SINI
+    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-analytics.js";
 
     // Your web app's Firebase configuration
@@ -247,7 +248,7 @@
         const loginTabBtn = document.getElementById('login-tab-btn');
         const registerFormEl = document.getElementById('register-form');
         const loginFormEl = document.getElementById('login-form');
-        const formRegister = document.getElementById('form-register'); // Ensure this is defined here
+        const formRegister = document.getElementById('form-register');
         const formLogin = document.getElementById('form-login');
         const registerTogglePasswordBtn = document.getElementById('register-toggle-password');
         const registerPasswordInput = document.getElementById('register-password');
@@ -286,7 +287,6 @@
                 return await response.json();
             } catch (error) {
                 console.error("Fetch error:", error);
-                // Optionally show a message to the user here
                 return null;
             }
         }
@@ -417,15 +417,15 @@
                 const user = userCredential.user;
 
                 if (user) {
-                    await user.updateProfile({ displayName: formData.name });
+                    // PERBAIKAN DI SINI: Gunakan fungsi updateProfile yang diimpor
+                    await updateProfile(user, { displayName: formData.name }); 
                 } else {
                     console.warn("Objek user kosong setelah pembuatan. Tidak dapat memperbarui profil.");
                     showMessage("Pendaftaran gagal: Terjadi masalah dengan akun Anda. Silakan coba lagi.", false);
-                    await signOut(auth); // Log out user if user object is invalid
-                    return; // Stop further execution
+                    await signOut(auth);
+                    return;
                 }
                 
-                // --- BAGIAN PENTING: Tunggu respons dari backend sebelum melanjutkan ---
                 const token = await user.getIdToken();
                 const response = await fetch(`${backendUrl}/api/users/register`, {
                     method: 'POST',
@@ -435,14 +435,11 @@
                 const result = await response.json();
 
                 if (!response.ok || !result.success) {
-                    // If backend fails to save data, log out user from Firebase Auth
                     await signOut(auth); 
                     throw new Error(result.message || 'Gagal menyimpan data ke backend.');
                 }
 
-                // If all is successful, then redirect to dashboard
-                redirectToDashboard('Pendaftaran berhasil! Mengalihkan ke dasbor...', formRegister); // Pass formRegister here
-                // formRegister.reset(); // This line is now handled by redirectToDashboard if passed
+                redirectToDashboard('Pendaftaran berhasil! Mengalihkan ke dasbor...', formRegister);
             } catch (error) {
                 let errorMessage = "Terjadi kesalahan pendaftaran.";
                 if (error.code === 'auth/email-already-in-use') {
@@ -461,7 +458,7 @@
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-            signInWithEmailAndPassword(auth, email, password) // Using auth from getAuth(app)
+            signInWithEmailAndPassword(auth, email, password)
                 .then((userCredential) => {
                     handleLoginOrRegisterSuccess(userCredential.user);
                 })
@@ -477,9 +474,9 @@
                 });
         });
 
-        loadProvinces(); // Call this after all elements and related functions are loaded
-        showRegisterForm(); // Call this to display the default register form when page loads
+        loadProvinces();
+        showRegisterForm();
     });
-    </script>
+</script>
 </body>
 </html>
