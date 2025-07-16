@@ -136,7 +136,8 @@
 <script type="module">
     // Import the functions you need from the SDKs you need
     import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
+    // PERBAIKAN: Tambahkan 'updateProfile' di sini
+    import { getAuth, onAuthStateChanged, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-auth.js";
     import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-storage.js";
     // Jika Anda menggunakan Firestore di frontend (untuk onSnapshot dll.), tambahkan ini:
     // import { getFirestore } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
@@ -223,7 +224,7 @@
 
                     if (response.status === 403 || response.status === 401) {
                          alert("Sesi Anda berakhir atau tidak valid. Silakan login kembali.");
-                         await signOut(auth); // Pastikan signOut selesai sebelum redirect
+                         await signOut(auth);
                          window.location.href = './index.html';
                          return;
                     }
@@ -354,7 +355,8 @@
                                 getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
                                     console.log("Download URL:", downloadURL);
                                     try {
-                                        await currentUser.updateProfile({ photoURL: downloadURL });
+                                        // PERBAIKAN DI SINI: Panggil updateProfile sebagai fungsi terpisah
+                                        await updateProfile(currentUser, { photoURL: downloadURL }); 
                                         console.log("Profil pengguna berhasil diperbarui!");
                                         alert("Foto profil berhasil diperbarui! Halaman akan dimuat ulang.");
                                         window.location.reload();
