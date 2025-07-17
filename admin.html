@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Verifikasi Anggota TIDAR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #1f2937; color: white; }
+        .message-box {
+            display: none;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-top: 1.5rem;
+            font-weight: 500;
+        }
+        .message-success { background-color: #10b981; color: #ffffff; }
+        .message-error { background-color: #ef4444; color: #ffffff; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen">
+
+    <div class="max-w-md w-full bg-gray-800 p-8 rounded-xl shadow-2xl">
+        <div class="text-center mb-8">
+            <i class="fas fa-user-shield fa-3x text-red-500"></i>
+            <h1 class="text-3xl font-bold mt-4">Panel Verifikasi Admin</h1>
+            <p class="text-gray-400 mt-2">Masukkan UID anggota untuk menyetujui keanggotaan.</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label for="uid-input" class="block text-sm font-medium text-gray-300 mb-1">User ID (UID) Anggota</label>
+                <input type="text" id="uid-input" placeholder="Salin UID dari dasbor anggota atau Firebase" class="w-full p-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-red-500 transition">
+            </div>
+            <div>
+                <button id="verify-btn" class="w-full bg-red-600 text-white font-bold p-3 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-red-500 transition-transform transform hover:scale-105">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Verifikasi Sekarang
+                </button>
+            </div>
+        </div>
+
+        <div id="message-box" class="message-box"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const uidInput = document.getElementById('uid-input');
+            const verifyBtn = document.getElementById('verify-btn');
+            const messageBox = document.getElementById('message-box');
+            const backendUrl = 'https://tidar-web.onrender.com'; // Ganti dengan URL backend Render Anda yang sebenarnya
+
+            function showMessage(message, isSuccess) {
+                messageBox.textContent = message;
+                messageBox.className = 'message-box';
+                messageBox.classList.add(isSuccess ? 'message-success' : 'message-error');
+                messageBox.style.display = 'block';
+            }
+
+            verifyBtn.addEventListener('click', async function() {
+                const uidToVerify = uidInput.value.trim();
+                if (!uidToVerify) {
+                    showMessage('UID tidak boleh kosong.', false);
+                    return;
+                }
+
+                verifyBtn.disabled = true;
+                verifyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Memverifikasi...';
+
+                try {
+                    const response = await fetch(`${backendUrl}/api/users/verify`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: uidToVerify })
+                    });
+
+                    const result = await response.json();
+                    showMessage(result.message, result.success);
+
+                    if (result.success) {
+                        uidInput.value = '';
+                    }
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    showMessage('Gagal terhubung ke server. Pastikan URL backend benar dan server berjalan.', false);
+                } finally {
+                    verifyBtn.disabled = false;
+                    verifyBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Verifikasi Sekarang';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
